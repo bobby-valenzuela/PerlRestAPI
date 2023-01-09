@@ -33,30 +33,59 @@ sub createToken
     my $sub_payload = $_[0];
 
     my $secret_key = 'mysecretkey'; 
-    my $relative_expiry = 30;
+    my $relative_expiry = 30; # 1HR
     my $expiry = time + $relative_expiry;
     my $token = encode_jwt(payload=>{data=>"$sub_payload", expiry=>$expiry}, key=>$secret_key, alg=>'HS256', relative_exp=>$relative_expiry);
     return ( accessToken => $token, tokenExpiry=> $expiry);
 }
 
+sub validateAuthHeader
+{
+    my $request = $_[0];
+    my $bearer_token = defined request->{env}->{HTTP_AUTHORIZATION} ? request->{env}->{HTTP_AUTHORIZATION} : ''; 
+    $bearer_token =~ s/\s+Authorization\s//;
+    $bearer_token = 'invalid' if $bearer_token eq '' || ( $bearer_token !~ m/Bearer/ );
+    $bearer_token =~ s/\s?Bearer\s//;
+    $bearer_token =~ s/\s+$//; # Right trim
+    return $bearer_token;
+}
+
 # Request handling
+
+# hook before => sub {
+#     if (!session('user') && request->path !~ m{^/login}) {
+#         forward '/login', { requested_path => request->path };
+#     }
+# };
+
 get '/' => sub{
     return {message => "First rest Web Service with Perl and Dancer"};
 };
 
-get '/accessToken' => sub {
+# params->{name};
+# body_parameters->get('user')
+# query_parameters->get('user')
+
+post '/accessToken' => sub {
+
+    # print Dumper request;
+
+    # Verify that Authorization Header was set and a token passed
+    my $bearer_token = &validateAuthHeader(request);
+    return {message => "Request failed", error=> "Missing/Invalid 'Authorization' Header"} if $bearer_token eq 'invalid';
 
     # Validate user
-    my $user = params->{name};
+    my $user = body_parameters->get('name');
+    my $pass = body_parameters->get('pass');
 
     my @recognized_users = ('Michael', 'Jim', 'Dwight');
 
-    if ( ! grep( /^$user$/, @recognized_users ) ) {
+    if ( ! grep( /^$user$/, @recognized_users ) || $pass ne 'password') {
         
-        return {message => "Unable to validate user."};
+        return {message => "Request failed", error=>"Unable to validate user"};
     
     }
-    
+
     # Send token
     my %token_details = &createToken($user);
     return \%token_details;
@@ -66,8 +95,12 @@ get '/accessToken' => sub {
 
 get '/users' => sub{
 
-    my $token = params->{token};
-    my $username = &validateToken($token) || return {message => "The token you've provided has expired. Please request another."};
+    # Verify that Authorization Header was set and a token passed
+    my $bearer_token = &validateAuthHeader(request);
+    return {message => "Request failed", error=> "Missing/Invalid 'Authorization' Header"} if $bearer_token eq 'invalid';
+
+    # Validate token/user
+    my $username = &validateToken($bearer_token) || return {message => "The token you've provided has expired. Please request another."};
 
     my %users = (
         RegionalManager => {
