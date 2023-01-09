@@ -7,7 +7,26 @@ use Dancer2;
 
 # set serializer => 'XML';
 set serializer => 'JSON'; 
- 
+
+sub validateToken
+{
+    my $sub_token = $_[0];
+
+    my $secret_key = 'mysecretkey'; 
+
+    try {
+        my $payload = decode_jwt(token=>$sub_token, key=>$secret_key, verify_exp=>1);
+
+        return 0 if ( $payload->{expiry} <= time);
+        
+        return $payload->{data};
+
+
+    }
+    catch{ return 0; }
+
+}
+
 get '/' => sub{
     return {message => "First rest Web Service with Perl and Dancer"};
 };
@@ -23,57 +42,49 @@ get '/accessToken' => sub {
         return {message => "Unable to validate user."};
     
     }
-    print "madeit\n";
+
     my $secret_key = 'mysecretkey'; 
-    my $relative_expiry = 10;
+    my $relative_expiry = 30;
     my $expiry = time + $relative_expiry;
 
-    my $token = encode_jwt(payload=>{data=>"any raw data $user", expiry=>$expiry}, key=>$secret_key, alg=>'HS256', relative_exp=>$relative_expiry);
-    
-    # sleep 13;
+    my $token = encode_jwt(payload=>{data=>"$user", expiry=>$expiry}, key=>$secret_key, alg=>'HS256', relative_exp=>$relative_expiry);
 
-    # Make sure token isn't expired
-    try {
-        my $payload = decode_jwt(token=>$token, key=>$secret_key, verify_exp=>1);
+    my %token_details = ( accessToken => $token, tokenExpiry=> $expiry);
 
-        my %token_details = ( accessToken => $token, tokenExpiry=> $expiry);
+    return \%token_details;
 
-        return \%token_details;
-
-    }
-    catch{
-        return {message => "Hello $user\n Have a token: $token \n from user: FAIL"};
-
-    }
     
 };
 
-
-get '/users/:name' => sub {
-    my $user = params->{name};
-    # return {"message" => "Hello $user"};
-    return {message => "Hello $user"};
-};
- 
 get '/users' => sub{
+
+    my $token = params->{token};
+    my $username = &validateToken($token) || return {message => "The token you've provided has expired. Please request another."};
+
     my %users = (
-        userA => {
+        RegionalManager => {
             id   => "1",
-            name => "Carlos",
+            name => "M.Scott",
         },
-        userB => {
+        NumberTwo => {
             id   => "2",
-            name => "Andres",
+            name => "J.Halpert",
         },
-        userC => {
+        BeetFarmer => {
             id   => "3",
-            name => "Bryan",
+            name => "D.Schrute",
         },
     );
 
     return \%users;
 };
 
+
+# get '/users/:name' => sub {
+#     my $user = params->{name};
+#     return {message => "Hello $user"};
+# };
+ 
 
 dance;
 
