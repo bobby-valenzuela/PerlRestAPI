@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 
+use JSON;
 use Crypt::JWT qw(decode_jwt encode_jwt);
 use Data::Dumper;
 use Try::Catch;
@@ -8,6 +9,7 @@ use Dancer2;
 # set serializer => 'XML';
 set serializer => 'JSON'; 
 set port => 3000;
+set content_type => 'application/json';
 
 # Token subs
 sub validateToken
