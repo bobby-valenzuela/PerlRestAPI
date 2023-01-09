@@ -8,6 +8,7 @@ use Dancer2;
 # set serializer => 'XML';
 set serializer => 'JSON'; 
 
+# Token subs
 sub validateToken
 {
     my $sub_token = $_[0];
@@ -27,12 +28,25 @@ sub validateToken
 
 }
 
+sub createToken
+{
+    my $sub_payload = $_[0];
+
+    my $secret_key = 'mysecretkey'; 
+    my $relative_expiry = 30;
+    my $expiry = time + $relative_expiry;
+    my $token = encode_jwt(payload=>{data=>"$sub_payload", expiry=>$expiry}, key=>$secret_key, alg=>'HS256', relative_exp=>$relative_expiry);
+    return ( accessToken => $token, tokenExpiry=> $expiry);
+}
+
+# Request handling
 get '/' => sub{
     return {message => "First rest Web Service with Perl and Dancer"};
 };
 
 get '/accessToken' => sub {
 
+    # Validate user
     my $user = params->{name};
 
     my @recognized_users = ('Michael', 'Jim', 'Dwight');
@@ -42,15 +56,9 @@ get '/accessToken' => sub {
         return {message => "Unable to validate user."};
     
     }
-
-    my $secret_key = 'mysecretkey'; 
-    my $relative_expiry = 30;
-    my $expiry = time + $relative_expiry;
-
-    my $token = encode_jwt(payload=>{data=>"$user", expiry=>$expiry}, key=>$secret_key, alg=>'HS256', relative_exp=>$relative_expiry);
-
-    my %token_details = ( accessToken => $token, tokenExpiry=> $expiry);
-
+    
+    # Send token
+    my %token_details = &createToken($user);
     return \%token_details;
 
     
