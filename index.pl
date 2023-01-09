@@ -7,6 +7,7 @@ use Dancer2;
 
 # set serializer => 'XML';
 set serializer => 'JSON'; 
+set port => 3000;
 
 # Token subs
 sub validateToken
@@ -58,13 +59,14 @@ sub validateAuthHeader
 #     }
 # };
 
+
 get '/' => sub{
     return {message => "First rest Web Service with Perl and Dancer"};
 };
 
 # params->{name};
-# body_parameters->get('user')
 # query_parameters->get('user')
+# body_parameters->get('user')
 
 post '/accessToken' => sub {
 
