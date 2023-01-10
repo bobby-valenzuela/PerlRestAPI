@@ -111,6 +111,31 @@ get '/users' => sub{
 
 };
 
+get '/Accounts/:accountid' => sub{
+
+    # Verify Content-Type
+    return sendErrResponse('Content-Type') if ! validateHeader(request,'Content-Type');
+
+    # Verify token received
+    my $received_token = validateHeader(request,'Authorization');
+    return sendErrResponse('Authorization') if ! $received_token;
+
+    # Validate access token/user
+    my $username = validateToken($received_token,'access') || return sendErrResponse('expiredToken');
+    
+    # Handle Request - /Accounts/:accountid
+    my $req_accountid = params->{accountid};
+    
+    my $accounts_json = qq(
+        {
+            "accountId": "$req_accountid",
+            "username": "$username"
+        }
+    );
+
+    return from_json($accounts_json);
+
+};
 
 # get '/users/:name' => sub {
 #     my $user = params->{name};
