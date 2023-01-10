@@ -61,15 +61,15 @@ You can send back Hashes with...
 `return \%return_json;`
 
 Or return Strings filled with JSON data with...
-`
-    my $accounts_json = qq(
-        {
-            "accountId": "$req_accountid",
-            "username": "$username"
-        }
-    );
+`    
+my $accounts_json = qq(
+    {
+        "accountId": "$req_accountid",
+        "username": "$username"
+    }
+);
 
-    return from_json($accounts_json);
+return from_json($accounts_json);
 `
 
 
