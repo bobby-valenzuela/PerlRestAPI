@@ -222,3 +222,40 @@ sub sendErrResponse
 dance;
 
 
+
+#### GETTING PARAMS
+
+# params->{name}; # This is path param - not query param
+# query_parameters->get('user')
+# body_parameters->get('user')
+
+
+
+#### STRING TO JSON
+
+# my $accounts_json = qq(
+#     {
+#         "accountId": "$req_accountid",
+#         "accountName": "$req_accountid_name",
+#         "accountOwnerName": "$accountid_owner_name"
+#     }
+# );
+
+# return from_json($accounts_json);
+
+
+#### HASH TO JSON
+
+# $accounts_list_json->[$a] = {
+#     id => $accounts_list->[$a][0],
+#     accountName => $accounts_list->[$a][1],
+#     accountOwner => $accountid_owner,
+#     admins => $admin_count,
+#     licenses => $lic_count,
+#     alerts => $alerts_count,
+#     resources =>from_json($resources_json)
+# };
+
+# my %return_json = ( results=>$accounts_list_json );
+
+
