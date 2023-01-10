@@ -6,7 +6,6 @@ access expires after 10s/refresh expires after 10m
 
 Make POST request to: `http://<host>:3000/accessToken`
 #### Headers:  
-
 - Content-Type: application/json
 
 #### Post Body
