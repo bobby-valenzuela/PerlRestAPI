@@ -56,6 +56,20 @@ Note: Obviously accessToken wouldn't expire after 10s (nor serving on port 3000)
 Also, we're only manually validating one user when we really should be validating against a database.
 
 
+On API response:
+You can send back Hashes with...
+`return \%return_json;`
 
+Or return Strings filled with JSON data with...
+`
+    my $accounts_json = qq(
+        {
+            "accountId": "$req_accountid",
+            "username": "$username"
+        }
+    );
+
+    return from_json($accounts_json);
+`
 
 
