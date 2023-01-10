@@ -68,8 +68,8 @@ my $accounts_json = qq(
         "username": "$username"
     }
 );
-
-return from_json($accounts_json);
 `
+  
+`return from_json($accounts_json);`
 
 
