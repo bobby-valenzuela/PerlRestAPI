@@ -13,7 +13,7 @@ Make POST request to: `http://<host>:3000/accessToken`
     "password":"bearsbeets"
 }
 `
-^ That's the only valid user at the moment - tweak to your needs.
+<- That's the only valid user at the moment - tweak to your needs.
 
 #### Reponse
 `
