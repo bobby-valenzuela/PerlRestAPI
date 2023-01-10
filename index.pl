@@ -6,10 +6,96 @@ use Data::Dumper;
 use Try::Catch;
 use Dancer2;
 
+
 # set serializer => 'XML';
 set serializer => 'JSON'; 
 set port => 3000;
 set content_type => 'application/json';
+
+# Request handling
+
+# hook before => sub {
+#     if (!session('user')  request->path !~ m{^/login}) {
+#         forward '/login', { requested_path => request->path };
+#     }
+# };
+
+get '/' => sub{
+    return {message => "Sample REST API"};
+};
+
+# params->{name};
+# query_parameters->get('user')
+# body_parameters->get('user')
+
+post '/accessToken' => sub {
+
+    # print Dumper request;
+
+    # Verify Content-Type
+    return sendErrResponse('Content-Type') if ! validateHeader(request,'Content-Type');
+
+    # Validate user
+    my $username = body_parameters->get('username');
+    my $password = body_parameters->get('password');
+
+    if ($username ne '' && $password ne ''){
+
+        if ($username eq lc('dwight') && $password eq 'bearsbeets'){
+
+            # Send token info
+            my %token_details = createToken($username);
+            return \%token_details;
+
+        }else{
+
+            return {message => "Request failed", error=>"Unable to validate user"};
+        
+        }
+
+    }
+    else{
+        
+        return {message => "Request failed", error=>"Missing username/password properties"};
+
+    }
+
+};
+
+get '/users' => sub{
+
+    # Verify Content-Type
+    return sendErrResponse('Content-Type') if ! validateHeader(request,'Content-Type');
+    return sendErrResponse('Authorization') if ! validateHeader(request,'Authorization');
+
+    # Validate token/user
+    my $username = validateToken(validateHeader(request,'Authorization')) || return {message => "The token you've provided has expired. Please request another."};
+
+    my %users = (
+        RegionalManager => {
+            id   => "1",
+            name => "M.Scott",
+        },
+        NumberTwo => {
+            id   => "2",
+            name => "J.Halpert",
+        },
+        BeetFarmer => {
+            id   => "3",
+            name => "D.Schrute",
+        },
+    );
+
+    return \%users;
+
+};
+
+
+# get '/users/:name' => sub {
+#     my $user = params->{name};
+#     return {message => "Hello $user"};
+# };
+
 
 # Token subs
 sub validateToken
@@ -42,94 +128,38 @@ sub createToken
     return ( accessToken => $token, tokenExpiry=> $expiry);
 }
 
-sub validateAuthHeader
+sub validateHeader
 {
     my $request = $_[0];
-    my $bearer_token = defined request->{env}->{HTTP_AUTHORIZATION} ? request->{env}->{HTTP_AUTHORIZATION} : ''; 
-    $bearer_token =~ s/\s+Authorization\s//;
-    $bearer_token = 'invalid' if $bearer_token eq '' || ( $bearer_token !~ m/Bearer/ );
-    $bearer_token =~ s/\s?Bearer\s//;
-    $bearer_token =~ s/\s+$//; # Right trim
-    return $bearer_token;
+    my $header = $_[1];
+
+    if ($header eq 'Authorization'){
+
+        my $bearer_token = defined request->{env}->{HTTP_AUTHORIZATION} ? request->{env}->{HTTP_AUTHORIZATION} : ''; 
+        $bearer_token =~ s/\s+Authorization\s//;
+        $bearer_token = 'invalid' if $bearer_token eq '' || ( $bearer_token !~ m/Bearer/ );
+        $bearer_token =~ s/\s?Bearer\s//;
+        $bearer_token =~ s/\s+$//; # Right trim
+        $bearer_token = 0 if $bearer_token eq 'invalid';
+        return $bearer_token;
+
+    }
+    elsif ($header eq 'Content-Type'){
+
+        my $content_type = defined request->{env}->{CONTENT_TYPE} ? request->{env}->{CONTENT_TYPE} : ''; 
+        $content_type =~ s/\s//g;
+        return lc($content_type) eq 'application/json' ? 1 : 0;
+    }
 }
 
-# Request handling
+sub sendErrResponse
+{
+    my $response_type = $_[0];
 
-# hook before => sub {
-#     if (!session('user') && request->path !~ m{^/login}) {
-#         forward '/login', { requested_path => request->path };
-#     }
-# };
+    return {message => "Request failed", error=> "Missing/Invalid 'Content-Type' Header. Expected 'application/json'"} if $response_type eq 'Content-Type';
+    return {message => "Request failed", error=> "Missing/Invalid 'Authorization' Header"} if $response_type eq 'Authorization';
 
-
-get '/' => sub{
-    return {message => "First rest Web Service with Perl and Dancer"};
-};
-
-# params->{name};
-# query_parameters->get('user')
-# body_parameters->get('user')
-
-post '/accessToken' => sub {
-
-    # print Dumper request;
-
-    # Verify that Authorization Header was set and a token passed
-    my $bearer_token = &validateAuthHeader(request);
-    return {message => "Request failed", error=> "Missing/Invalid 'Authorization' Header"} if $bearer_token eq 'invalid';
-
-    # Validate user
-    my $user = body_parameters->get('name');
-    my $pass = body_parameters->get('pass');
-
-    my @recognized_users = ('Michael', 'Jim', 'Dwight');
-
-    if ( ! grep( /^$user$/, @recognized_users ) || $pass ne 'password') {
-        
-        return {message => "Request failed", error=>"Unable to validate user"};
-    
-    }
-
-    # Send token
-    my %token_details = &createToken($user);
-    return \%token_details;
-
-    
-};
-
-get '/users' => sub{
-
-    # Verify that Authorization Header was set and a token passed
-    my $bearer_token = &validateAuthHeader(request);
-    return {message => "Request failed", error=> "Missing/Invalid 'Authorization' Header"} if $bearer_token eq 'invalid';
-
-    # Validate token/user
-    my $username = &validateToken($bearer_token) || return {message => "The token you've provided has expired. Please request another."};
-
-    my %users = (
-        RegionalManager => {
-            id   => "1",
-            name => "M.Scott",
-        },
-        NumberTwo => {
-            id   => "2",
-            name => "J.Halpert",
-        },
-        BeetFarmer => {
-            id   => "3",
-            name => "D.Schrute",
-        },
-    );
-
-    return \%users;
-};
-
-
-# get '/users/:name' => sub {
-#     my $user = params->{name};
-#     return {message => "Hello $user"};
-# };
- 
+}
 
 dance;
 
