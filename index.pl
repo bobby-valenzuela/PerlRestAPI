@@ -20,8 +20,9 @@ set content_type => 'application/json';
 #     }
 # };
 
+
 get '/' => sub{
-    return {message => "Sample REST API"};
+    return {message => "Perl REST API with Dancer using JWT Auth "};
 };
 
 # params->{name};
@@ -38,27 +39,38 @@ post '/accessToken' => sub {
     # Validate user
     my $username = body_parameters->get('username');
     my $password = body_parameters->get('password');
+    my $received_token = validateHeader(request,'Authorization');
 
     if ($username ne '' && $password ne ''){
 
-        if ($username eq lc('dwight') && $password eq 'bearsbeets'){
+        # Verify user/pass here - to be done with SQL (DBI module)
+        if (lc($username) eq 'dwight'&& $password eq 'bearsbeets'){
 
             # Send token info
             my %token_details = createToken($username);
             return \%token_details;
 
-        }else{
-
-            return {message => "Request failed", error=>"Unable to validate user"};
-        
         }
 
-    }
-    else{
-        
-        return {message => "Request failed", error=>"Missing username/password properties"};
+        return {message => "Request failed", error=>"Unable to validate user"};
 
     }
+    elsif ($received_token){
+
+        my $username = validateToken($received_token,'refresh');
+        
+        if  ($username){
+
+            my %token_details = createToken($username);
+            return \%token_details;
+
+        }
+
+        return {message => "Request failed", error=>"Invalid/Expired refresh token."};
+
+    }
+
+    return {message => "Request failed", error=>"Missing username/password properties"};
 
 };
 
@@ -66,10 +78,15 @@ get '/users' => sub{
 
     # Verify Content-Type
     return sendErrResponse('Content-Type') if ! validateHeader(request,'Content-Type');
-    return sendErrResponse('Authorization') if ! validateHeader(request,'Authorization');
+
+    # Verify token received
+    my $received_token = validateHeader(request,'Authorization');
+    return sendErrResponse('Authorization') if ! $received_token;
 
     # Validate token/user
-    my $username = validateToken(validateHeader(request,'Authorization')) || return {message => "The token you've provided has expired. Please request another."};
+    my $username = validateToken($received_token,'access') || return sendErrResponse('expiredToken');
+
+    # Handle Request
 
     my %users = (
         RegionalManager => {
@@ -84,6 +101,10 @@ get '/users' => sub{
             id   => "3",
             name => "D.Schrute",
         },
+        You => {
+            id => 100,
+            name => $username
+        }
     );
 
     return \%users;
@@ -101,8 +122,12 @@ get '/users' => sub{
 sub validateToken
 {
     my $sub_token = $_[0];
+    my $sub_token_type = $_[1];
 
-    my $secret_key = 'mysecretkey'; 
+    my $access_key = 'accessSecret';
+    my $refresh_key = 'refreshSecret';
+
+    my $secret_key = $sub_token_type eq 'access' ? $access_key : $refresh_key; 
 
     try {
         my $payload = decode_jwt(token=>$sub_token, key=>$secret_key, verify_exp=>1);
@@ -121,11 +146,18 @@ sub createToken
 {
     my $sub_payload = $_[0];
 
-    my $secret_key = 'mysecretkey'; 
-    my $relative_expiry = 30; # 1HR
-    my $expiry = time + $relative_expiry;
-    my $token = encode_jwt(payload=>{data=>"$sub_payload", expiry=>$expiry}, key=>$secret_key, alg=>'HS256', relative_exp=>$relative_expiry);
-    return ( accessToken => $token, tokenExpiry=> $expiry);
+    my $access_key = 'accessSecret';
+    my $refresh_key = 'refreshSecret';
+
+    my $access_token_rel_expiry = 30; # 30s
+    my $access_token_expiry = time + $access_token_rel_expiry;
+ 
+    my $refresh_token_rel_expiry = 600; # 10M
+    my $refresh_token_expiry = time + $refresh_token_rel_expiry;
+
+    my $access_token = encode_jwt(payload=>{data=>"$sub_payload", expiry=>$access_token_expiry}, key=>$access_key, alg=>'HS256', relative_exp=>$access_token_rel_expiry, is_refresh=> 0 );
+    my $refresh_token = encode_jwt(payload=>{data=>"$sub_payload", expiry=>$refresh_token_expiry}, key=>$refresh_key, alg=>'HS256', relative_exp=>$refresh_token_rel_expiry, is_refresh=> 1 );
+    return ( accessToken => $access_token, accessTokenExpiry=> $access_token_expiry, refreshToken=>$refresh_token, refreshTokenExpiry=>$refresh_token_expiry);
 }
 
 sub validateHeader
@@ -135,7 +167,7 @@ sub validateHeader
 
     if ($header eq 'Authorization'){
 
-        my $bearer_token = defined $request->{env}->{HTTP_AUTHORIZATION} ? $request->{env}->{HTTP_AUTHORIZATION} : ''; 
+        my $bearer_token = defined request->{env}->{HTTP_AUTHORIZATION} ? request->{env}->{HTTP_AUTHORIZATION} : ''; 
         $bearer_token =~ s/\s+Authorization\s//;
         $bearer_token = 'invalid' if $bearer_token eq '' || ( $bearer_token !~ m/Bearer/ );
         $bearer_token =~ s/\s?Bearer\s//;
@@ -146,7 +178,7 @@ sub validateHeader
     }
     elsif ($header eq 'Content-Type'){
 
-        my $content_type = defined $request->{env}->{CONTENT_TYPE} ? $request->{env}->{CONTENT_TYPE} : ''; 
+        my $content_type = defined request->{env}->{CONTENT_TYPE} ? request->{env}->{CONTENT_TYPE} : ''; 
         $content_type =~ s/\s//g;
         return lc($content_type) eq 'application/json' ? 1 : 0;
     }
@@ -158,6 +190,7 @@ sub sendErrResponse
 
     return {message => "Request failed", error=> "Missing/Invalid 'Content-Type' Header. Expected 'application/json'"} if $response_type eq 'Content-Type';
     return {message => "Request failed", error=> "Missing/Invalid 'Authorization' Header"} if $response_type eq 'Authorization';
+    return {message => "Request failed", error=> "Invalid/Expired Access Token."} if $response_type eq 'expiredToken';
 
 }
 
