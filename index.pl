@@ -135,7 +135,7 @@ sub validateHeader
 
     if ($header eq 'Authorization'){
 
-        my $bearer_token = defined request->{env}->{HTTP_AUTHORIZATION} ? request->{env}->{HTTP_AUTHORIZATION} : ''; 
+        my $bearer_token = defined $request->{env}->{HTTP_AUTHORIZATION} ? $request->{env}->{HTTP_AUTHORIZATION} : ''; 
         $bearer_token =~ s/\s+Authorization\s//;
         $bearer_token = 'invalid' if $bearer_token eq '' || ( $bearer_token !~ m/Bearer/ );
         $bearer_token =~ s/\s?Bearer\s//;
@@ -146,7 +146,7 @@ sub validateHeader
     }
     elsif ($header eq 'Content-Type'){
 
-        my $content_type = defined request->{env}->{CONTENT_TYPE} ? request->{env}->{CONTENT_TYPE} : ''; 
+        my $content_type = defined $request->{env}->{CONTENT_TYPE} ? $request->{env}->{CONTENT_TYPE} : ''; 
         $content_type =~ s/\s//g;
         return lc($content_type) eq 'application/json' ? 1 : 0;
     }
