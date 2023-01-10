@@ -5,7 +5,7 @@ Using Dancer to build a basic REST API with JWT Auth
 access expires after 10s/refresh expires after 10m 
 
 Make POST request to: `http://<host>:3000/accessToken`
-#### Headers:\
+#### Headers:<\br>
 - Content-Type: application/json
 
 #### Post Body
