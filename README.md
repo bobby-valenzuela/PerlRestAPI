@@ -23,6 +23,8 @@ Make POST request to: `http://<host>:3000/accessToken`
 }
 `
 
+
+
 ### Get users
 Make GET request to `http://<host>:3000/users`
 
