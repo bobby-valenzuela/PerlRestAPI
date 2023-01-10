@@ -3,10 +3,10 @@ Using Dancer to build a basic REST API with JWT Auth
 
 ### Get an access token (expires after 10s)
 Make POST request to: `http://<host>:3000/accessToken`
-### Headers:
+#### Headers:
 - Content-Type: application/json
 
-### Post Body
+#### Post Body
 `
 {
     "username":"dwight",
@@ -15,7 +15,7 @@ Make POST request to: `http://<host>:3000/accessToken`
 `
 ^ That's the only valid user at the moment - tweak to your needs.
 
-### Reponse
+#### Reponse
 `
 {
     "accessToken": <token>,
@@ -26,7 +26,7 @@ Make POST request to: `http://<host>:3000/accessToken`
 ### Get users
 Make GET request to `http://<host>:3000/users`
 
-### Headers:
+#### Headers:
 - Content-Type: application/json
 - Authorization: Bearer <token>
 
