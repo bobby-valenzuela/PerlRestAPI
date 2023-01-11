@@ -31,7 +31,7 @@ access expires after 10s/refresh expires after 10m
 
 #### Headers:
 - Content-Type: application/json
-- Authorization: Bearer <refreshToken>
+- Authorization: Bearer \<refreshToken>
 
 Not payload required.
 
