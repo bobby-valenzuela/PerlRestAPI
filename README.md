@@ -50,7 +50,7 @@ Make GET request to `http://<host>:3000/users`
 
 #### Headers:
 - Content-Type: application/json
-- Authorization: Bearer <token>
+- Authorization: Bearer \<token>
 
 Note: Obviously accessToken wouldn't expire after 10s (nor serving on port 3000) - but this is a template to lay the groundwork for a RESTful service with Dancer.
 Also, we're only manually validating one user when we really should be validating against a database.
